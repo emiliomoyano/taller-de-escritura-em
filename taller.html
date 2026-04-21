@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taller de escritura</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9f9f7; color: #1a1a1a; min-height: 100vh; }
+  .screen { display: none; max-width: 480px; margin: 0 auto; padding: 2rem 1.25rem; }
+  .screen.active { display: block; }
+  h1 { font-size: 22px; font-weight: 500; margin-bottom: 6px; }
+  h2 { font-size: 17px; font-weight: 500; margin-bottom: 12px; }
+  .muted { font-size: 14px; color: #666; line-height: 1.5; margin-bottom: 1.5rem; }
+  label { font-size: 13px; color: #666; display: block; margin-bottom: 5px; margin-top: 14px; }
+  input[type=text], input[type=password], textarea {
+    width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid #ddd;
+    border-radius: 8px; background: #fff; color: #1a1a1a; outline: none;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus { border-color: #999; }
+  textarea { resize: none; height: 130px; line-height: 1.6; }
+  .btn {
+    display: block; width: 100%; padding: 12px; font-size: 15px; font-weight: 500;
+    margin-top: 14px; cursor: pointer; border-radius: 8px; border: 1px solid #ddd;
+    background: #fff; color: #1a1a1a; font-family: inherit; text-align: center;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn.primary { background: #1a1a1a; color: #fff; border-color: transparent; }
+  .btn.danger { border-color: #e2a0a0; color: #c0392b; }
+  .btn.sm { padding: 7px 14px; font-size: 13px; width: auto; display: inline-block; margin-top: 0; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .card {
+    background: #fff; border: 1px solid #eee; border-radius: 12px;
+    padding: 1rem 1.25rem; margin-bottom: 12px;
+  }
+  .card-name { font-size: 12px; font-weight: 500; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card-text { font-size: 15px; color: #1a1a1a; line-height: 1.7; white-space: pre-wrap; }
+  .consigna-box {
+    background: #fff; border: 1px solid #eee; border-radius: 10px;
+    padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+    font-size: 15px; color: #1a1a1a; line-height: 1.7; font-style: italic;
+  }
+  .consigna-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #aaa; margin-bottom: 6px; font-style: normal; }
+  .group-card {
+    background: #fff; border: 1px solid #eee; border-radius: 12px;
+    padding: 1rem 1.25rem; margin-bottom: 10px; cursor: pointer;
+  }
+  .group-card:hover { border-color: #ccc; }
+  .group-name { font-size: 15px; font-weight: 500; color: #1a1a1a; margin-bottom: 4px; }
+  .group-meta { font-size: 13px; color: #888; }
+  .empty { text-align: center; padding: 3rem 1rem; color: #999; font-size: 14px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .back { font-size: 14px; color: #888; cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; }
+  .err { font-size: 13px; color: #c0392b; margin-top: 6px; min-height: 18px; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #f0f0ee; color: #888; margin-left: 6px; }
+  .tag.green { background: #e8f5e9; color: #2e7d32; }
+  .divider { border: none; border-top: 1px solid #eee; margin: 1.5rem 0; }
+  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #aaa; margin-bottom: 12px; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #666; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading { text-align: center; padding: 2rem; color: #999; font-size: 14px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .url-box { background: #f4f4f2; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #444; word-break: break-all; margin: 8px 0 4px; font-family: monospace; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="s-home" class="screen active">
+  <div style="padding-top: 1rem; margin-bottom: 2rem;">
+    <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 8px;">Taller de escritura</p>
+    <h1>Bienvenido</h1>
+  </div>
+  <p class="muted">Si llegaste desde un link de tu coordinador, el grupo ya se carga automáticamente. O ingresá tu nombre y escribí.</p>
+  <div id="home-grupo-info" style="display:none">
+    <div class="consigna-box">
+      <div class="consigna-label">Consigna</div>
+      <div id="home-consigna-text"></div>
+    </div>
+    <label>Tu nombre</label>
+    <input type="text" id="home-nombre" placeholder="Cómo querés que te vean" />
+    <p class="err" id="home-err"></p>
+    <button class="btn primary" onclick="entrarComoParticipante()">Entrar</button>
+  </div>
+  <div id="home-no-grupo" style="display:none">
+    <p class="muted" style="color: #c0392b;">El link no corresponde a ningún grupo activo.</p>
+  </div>
+  <hr class="divider">
+  <button class="btn" onclick="showScreen('s-coord-login')">Soy coordinador</button>
+</div>
+
+<!-- COORD LOGIN -->
+<div id="s-coord-login" class="screen">
+  <div class="topbar">
+    <button class="back" onclick="showScreen('s-home')">← Volver</button>
+  </div>
+  <h1>Coordinador</h1>
+  <p class="muted">Ingresá tu contraseña para administrar los grupos.</p>
+  <label>Contraseña</label>
+  <input type="password" id="coord-pass" placeholder="Contraseña" onkeydown="if(event.key==='Enter')loginCoord()" />
+  <p class="err" id="coord-err"></p>
+  <button class="btn primary" onclick="loginCoord()">Ingresar</button>
+</div>
+
+<!-- COORD PANEL -->
+<div id="s-coord-panel" class="screen">
+  <div class="topbar">
+    <h1>Mis grupos</h1>
+    <button class="btn sm primary" onclick="showScreen('s-nuevo-grupo')">+ Nuevo</button>
+  </div>
+  <div id="coord-grupos"></div>
+  <hr class="divider">
+  <button class="btn" onclick="showScreen('s-home')">Cerrar sesión</button>
+</div>
+
+<!-- NUEVO GRUPO -->
+<div id="s-nuevo-grupo" class="screen">
+  <div class="topbar">
+    <button class="back" onclick="showScreen('s-coord-panel')">← Volver</button>
+  </div>
+  <h1>Nuevo grupo</h1>
+  <label>Nombre del grupo</label>
+  <input type="text" id="ng-nombre" placeholder="Ej: Grupo martes noche" />
+  <label>Consigna</label>
+  <textarea id="ng-consigna" placeholder="Escribí la consigna para este grupo..."></textarea>
+  <p class="err" id="ng-err"></p>
+  <button class="btn primary" id="ng-btn" onclick="crearGrupo()">Crear grupo</button>
+</div>
+
+<!-- COORD GRUPO -->
+<div id="s-coord-grupo" class="screen">
+  <div class="topbar">
+    <button class="back" onclick="cargarPanelCoord()">← Grupos</button>
+  </div>
+  <h1 id="cg-titulo"></h1>
+  <div style="margin-bottom: 1rem;">
+    <p style="font-size: 12px; color: #aaa; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em;">Link para compartir</p>
+    <div class="url-box" id="cg-url"></div>
+    <button class="btn sm" onclick="copiarLink()" style="margin-top:6px">Copiar link</button>
+  </div>
+  <div style="margin-bottom: 1rem;">
+    <p style="font-size: 12px; color: #aaa; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">Consigna</p>
+    <p style="font-size: 14px; color: #444; font-style: italic; line-height: 1.6;" id="cg-consigna"></p>
+  </div>
+  <div class="row" style="margin-bottom: 1.5rem;">
+    <button class="btn sm" onclick="showScreen('s-editar-consigna')">Editar consigna</button>
+    <button class="btn sm danger" onclick="borrarEntradas()">Borrar entradas</button>
+    <button class="btn sm danger" onclick="borrarGrupo()">Borrar grupo</button>
+  </div>
+  <hr class="divider">
+  <p class="section-label" id="cg-count"></p>
+  <div id="cg-entries"></div>
+</div>
+
+<!-- EDITAR CONSIGNA -->
+<div id="s-editar-consigna" class="screen">
+  <div class="topbar">
+    <button class="back" onclick="showScreen('s-coord-grupo')">← Volver</button>
+  </div>
+  <h1>Editar consigna</h1>
+  <label>Consigna</label>
+  <textarea id="ec-texto" style="height:150px"></textarea>
+  <button class="btn primary" onclick="guardarConsigna()">Guardar</button>
+</div>
+
+<!-- PARTICIPANTE -->
+<div id="s-participante" class="screen">
+  <div style="margin-bottom: 1.5rem;">
+    <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #bbb; margin-bottom: 8px;">Taller de escritura</p>
+    <h1 id="p-grupo-nombre"></h1>
+  </div>
+  <div class="consigna-box">
+    <div class="consigna-label">Consigna</div>
+    <div id="p-consigna"></div>
+  </div>
+  <div id="p-mi-entrada"></div>
+  <hr class="divider">
+  <p class="section-label" id="p-otros-label"></p>
+  <div id="p-otros"></div>
+  <button class="btn sm" onclick="refrescarParticipante()" style="margin-top:8px;color:#888">↻ Actualizar</button>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://rfjtraxubmfxricyageg.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmanRyYXh1Ym1meHJpY3lhZ2VnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NjA4NDQsImV4cCI6MjA5MjMzNjg0NH0.LuTRVNCUVNr3005phYBOyT5fM6Vr7U3Ts2z7FGT1vHg';
+const COORD_PASS = '1234';
+const APP_URL = window.location.origin + window.location.pathname;
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentGrupoId = null;
+let currentUser = null;
+let currentGrupoData = null;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const gid = params.get('grupo');
+  if (gid) {
+    const { data } = await db.from('grupos').select('*').eq('id', gid).single();
+    if (data) {
+      currentGrupoId = data.id;
+      currentGrupoData = data;
+      document.getElementById('home-consigna-text').textContent = data.consigna;
+      document.getElementById('home-grupo-info').style.display = 'block';
+    } else {
+      document.getElementById('home-no-grupo').style.display = 'block';
+    }
+  } else {
+    document.getElementById('home-grupo-info').style.display = 'none';
+    document.getElementById('home-no-grupo').style.display = 'none';
+  }
+}
+
+function loginCoord() {
+  const p = document.getElementById('coord-pass').value;
+  if (p === COORD_PASS) {
+    document.getElementById('coord-pass').value = '';
+    document.getElementById('coord-err').textContent = '';
+    cargarPanelCoord();
+  } else {
+    document.getElementById('coord-err').textContent = 'Contraseña incorrecta.';
+  }
+}
+
+async function cargarPanelCoord() {
+  showScreen('s-coord-panel');
+  const cont = document.getElementById('coord-grupos');
+  cont.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando...</div>';
+  const { data: grupos } = await db.from('grupos').select('*').order('creado_at', { ascending: false });
+  if (!grupos || !grupos.length) {
+    cont.innerHTML = '<div class="empty">Todavía no tenés grupos. Creá uno.</div>';
+    return;
+  }
+  const { data: todasEntradas } = await db.from('entradas').select('grupo_id');
+  const counts = {};
+  (todasEntradas || []).forEach(e => { counts[e.grupo_id] = (counts[e.grupo_id] || 0) + 1; });
+  cont.innerHTML = '';
+  grupos.forEach(g => {
+    const n = counts[g.id] || 0;
+    const d = document.createElement('div');
+    d.className = 'group-card';
+    d.innerHTML = '<div class="group-name">' + g.nombre + '</div><div class="group-meta">' + (n ? n + ' entrada' + (n > 1 ? 's' : '') : 'Sin entradas aún') + '</div>';
+    d.onclick = () => abrirGrupoCoord(g.id);
+    cont.appendChild(d);
+  });
+}
+
+async function crearGrupo() {
+  const nombre = document.getElementById('ng-nombre').value.trim();
+  const consigna = document.getElementById('ng-consigna').value.trim();
+  if (!nombre) { document.getElementById('ng-err').textContent = 'El grupo necesita un nombre.'; return; }
+  if (!consigna) { document.getElementById('ng-err').textContent = 'Escribí una consigna.'; return; }
+  const btn = document.getElementById('ng-btn');
+  btn.disabled = true; btn.textContent = 'Creando...';
+  const { error } = await db.from('grupos').insert({ nombre, consigna });
+  btn.disabled = false; btn.textContent = 'Crear grupo';
+  if (error) { document.getElementById('ng-err').textContent = 'Error al crear el grupo.'; return; }
+  document.getElementById('ng-nombre').value = '';
+  document.getElementById('ng-consigna').value = '';
+  document.getElementById('ng-err').textContent = '';
+  cargarPanelCoord();
+}
+
+async function abrirGrupoCoord(id) {
+  currentGrupoId = id;
+  const { data: g } = await db.from('grupos').select('*').eq('id', id).single();
+  const { data: entradas } = await db.from('entradas').select('*').eq('grupo_id', id).order('creado_at', { ascending: true });
+  currentGrupoData = g;
+  document.getElementById('cg-titulo').textContent = g.nombre;
+  const url = APP_URL + '?grupo=' + id;
+  document.getElementById('cg-url').textContent = url;
+  document.getElementById('cg-consigna').textContent = g.consigna;
+  document.getElementById('ec-texto').value = g.consigna;
+  const cont = document.getElementById('cg-entries');
+  const count = entradas ? entradas.length : 0;
+  document.getElementById('cg-count').textContent = count ? count + ' entrada' + (count > 1 ? 's' : '') : '';
+  if (!count) {
+    cont.innerHTML = '<div class="empty">Todavía no hay entradas.</div>';
+  } else {
+    cont.innerHTML = '';
+    entradas.forEach(e => {
+      const d = document.createElement('div');
+      d.className = 'card';
+      d.innerHTML = '<div class="card-name">' + e.nombre + '</div><div class="card-text">' + e.texto + '</div>';
+      cont.appendChild(d);
+    });
+  }
+  showScreen('s-coord-grupo');
+}
+
+function copiarLink() {
+  const url = APP_URL + '?grupo=' + currentGrupoId;
+  navigator.clipboard.writeText(url).then(() => alert('Link copiado.'));
+}
+
+async function guardarConsigna() {
+  const texto = document.getElementById('ec-texto').value.trim();
+  if (!texto) return;
+  await db.from('grupos').update({ consigna: texto }).eq('id', currentGrupoId);
+  abrirGrupoCoord(currentGrupoId);
+}
+
+async function borrarEntradas() {
+  if (!confirm('¿Borrar todas las entradas de este grupo?')) return;
+  await db.from('entradas').delete().eq('grupo_id', currentGrupoId);
+  abrirGrupoCoord(currentGrupoId);
+}
+
+async function borrarGrupo() {
+  if (!confirm('¿Borrar este grupo y todas sus entradas? Esta acción no se puede deshacer.')) return;
+  await db.from('entradas').delete().eq('grupo_id', currentGrupoId);
+  await db.from('grupos').delete().eq('id', currentGrupoId);
+  cargarPanelCoord();
+}
+
+async function entrarComoParticipante() {
+  const nombre = document.getElementById('home-nombre').value.trim();
+  if (!nombre) { document.getElementById('home-err').textContent = 'Escribí tu nombre para continuar.'; return; }
+  currentUser = { nombre };
+  mostrarPanelParticipante();
+}
+
+async function mostrarPanelParticipante() {
+  showScreen('s-participante');
+  document.getElementById('p-grupo-nombre').textContent = currentGrupoData.nombre;
+  document.getElementById('p-consigna').textContent = currentGrupoData.consigna;
+  const { data: entradas } = await db.from('entradas').select('*').eq('grupo_id', currentGrupoId).order('creado_at', { ascending: true });
+  const miEntrada = entradas ? entradas.find(e => e.nombre.toLowerCase() === currentUser.nombre.toLowerCase()) : null;
+  if (miEntrada) currentUser.entradaId = miEntrada.id;
+  renderMiEntrada(miEntrada);
+  renderOtros(entradas, miEntrada);
+}
+
+function renderMiEntrada(entrada) {
+  const cont = document.getElementById('p-mi-entrada');
+  if (entrada && !entrada._editing) {
+    cont.innerHTML = '<div class="card"><div class="card-name">' + entrada.nombre + '<span class="tag green">publicado</span></div><div class="card-text">' + entrada.texto + '</div><button class="btn sm" style="margin-top:10px" onclick="editarMiEntrada()">Editar</button></div>';
+  } else {
+    const t = entrada ? entrada.texto : '';
+    cont.innerHTML = '<div><label>Tu texto</label><textarea id="p-texto" placeholder="Escribí acá...">' + t + '</textarea><button class="btn primary" id="p-pub-btn" onclick="publicar()">Publicar</button></div>';
+  }
+}
+
+function editarMiEntrada() {
+  db.from('entradas').select('*').eq('grupo_id', currentGrupoId).then(({ data }) => {
+    const me = data ? data.find(e => e.nombre.toLowerCase() === currentUser.nombre.toLowerCase()) : null;
+    if (me) { me._editing = true; renderMiEntrada(me); }
+  });
+}
+
+async function publicar() {
+  const texto = document.getElementById('p-texto').value.trim();
+  if (!texto) return;
+  const btn = document.getElementById('p-pub-btn');
+  btn.disabled = true; btn.textContent = 'Publicando...';
+  if (currentUser.entradaId) {
+    await db.from('entradas').update({ texto }).eq('id', currentUser.entradaId);
+  } else {
+    const { data } = await db.from('entradas').insert({ grupo_id: currentGrupoId, nombre: currentUser.nombre, texto }).select().single();
+    if (data) currentUser.entradaId = data.id;
+  }
+  await mostrarPanelParticipante();
+}
+
+function renderOtros(entradas, miEntrada) {
+  const cont = document.getElementById('p-otros');
+  const otros = entradas ? entradas.filter(e => !miEntrada || e.id !== miEntrada.id) : [];
+  document.getElementById('p-otros-label').textContent = otros.length ? otros.length + ' entrada' + (otros.length > 1 ? 's' : '') + ' del grupo' : '';
+  if (!otros.length) {
+    cont.innerHTML = '<p style="font-size:14px;color:#aaa;text-align:center;padding:1.5rem 0">Todavía no hay otras entradas.</p>';
+    return;
+  }
+  cont.innerHTML = '';
+  otros.forEach(e => {
+    const d = document.createElement('div');
+    d.className = 'card';
+    d.innerHTML = '<div class="card-name">' + e.nombre + '</div><div class="card-text">' + e.texto + '</div>';
+    cont.appendChild(d);
+  });
+}
+
+async function refrescarParticipante() {
+  const { data: g } = await db.from('grupos').select('*').eq('id', currentGrupoId).single();
+  currentGrupoData = g;
+  document.getElementById('p-consigna').textContent = g.consigna;
+  await mostrarPanelParticipante();
+}
+
+init();
+</script>
+</body>
+</html>
